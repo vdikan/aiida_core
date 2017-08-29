@@ -10,10 +10,15 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from aiida.common.utils import abstractclassmethod
 
-import collections
-import logging
 import os
 import types
+import logging
+import importlib
+import collections
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
 
 from aiida.common.exceptions import (InternalError, ModificationNotAllowed,
                                      UniquenessError)
@@ -139,6 +144,9 @@ class AbstractNode(object):
     # A list of tuples, saying which attributes cannot be set at the same time
     # See documentation in the set() method.
     _set_incompatibilities = []
+
+    # A list of attribute names that will be ignored when creating the hash.
+    _hash_ignored_attributes = []
 
     def get_desc(self):
         """
@@ -1083,8 +1091,11 @@ class AbstractNode(object):
             # Return without value, meaning that this is an empty generator
             return
             yield # Needed after return to convert it to a generator
-        for _ in self._db_iterextras():
-            yield _
+        for extra in self._db_iterextras():
+            # Don't return if key == hash
+            if extra[0] == 'hash':
+                continue
+            yield extra
 
 
     def iterattrs(self):
@@ -1372,7 +1383,7 @@ class AbstractNode(object):
                                          reset_limit=True).get_abs_path(path, check_existence=True)
 
     @abstractmethod
-    def store_all(self, with_transaction=True):
+    def store_all(self, with_transaction=True, use_cache=False):
         """
         Store the node, together with all input links, if cached, and also the
         linked nodes, if they were not stored yet.
@@ -1442,7 +1453,7 @@ class AbstractNode(object):
         pass
 
     @abstractmethod
-    def store(self, with_transaction=True):
+    def store(self, with_transaction=True, use_cache=False):
         """
         Store a new node in the DB, also saving its repository directory
         and attributes.
@@ -1463,6 +1474,7 @@ class AbstractNode(object):
         # for storing data and its attributes.
         pass
 
+
     def __del__(self):
         """
         Called only upon real object destruction from memory
@@ -1471,6 +1483,53 @@ class AbstractNode(object):
         """
         if getattr(self, '_temp_folder', None) is not None:
             self._temp_folder.erase()
+
+
+    def get_hash(self, ignore_errors=True, **kwargs):
+        """
+        Making a hash based on my attributes
+        """
+        from aiida.common.hashing import make_hash
+        try:
+            return make_hash(self._get_objects_to_hash(), **kwargs)
+        except Exception as e:
+            if ignore_errors:
+                return None
+            else:
+                raise e
+
+    def _get_objects_to_hash(self):
+        return [
+            importlib.import_module(
+                self.__module__.split('.', 1)[0]
+            ).__version__,
+            {
+                key: val for key, val in self.get_attrs().items()
+                if key not in self._hash_ignored_attributes
+            },
+            self.folder
+        ]
+
+    def rehash(self):
+        self.set_extra('hash', self.get_hash())
+
+    def get_same_node(self):
+        from aiida.orm.querybuilder import QueryBuilder
+
+        hash_ = self.get_hash()
+        if hash_:
+            qb = QueryBuilder()
+            qb.append(self.__class__, filters={'extras.hash': hash_}, project='*', subclassing=False)
+            for same_node, in qb.iterall():
+                if same_node._is_valid_cache():
+                    return same_node
+        return None
+
+    def _is_valid_cache(self):
+        """
+        Subclass hook to exclude certain Nodes (e.g. failed calculations) from being considered in the caching process.
+        """
+        return True
 
     @property
     def out(self):

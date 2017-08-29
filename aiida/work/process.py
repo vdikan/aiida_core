@@ -18,6 +18,7 @@ import plum.port as port
 import plum.process
 from plum.process_monitor import MONITOR
 import plum.process_monitor
+from plum.error import FastForwardError
 
 import voluptuous
 from abc import ABCMeta
@@ -25,6 +26,7 @@ from aiida.common.extendeddicts import FixedFieldsAttributeDict
 import aiida.common.exceptions as exceptions
 from aiida.common.lang import override, protected
 from aiida.common.links import LinkType
+from aiida.common import caching
 from aiida.utils.calculation import add_source_info
 from aiida.work.defaults import class_loader
 import aiida.work.util
@@ -33,7 +35,6 @@ from aiida.orm.calculation import Calculation
 from aiida.orm.data.parameter import ParameterData
 from aiida.orm.calculation.work import WorkCalculation
 from aiida import LOG_LEVEL_REPORT
-
 
 
 class DictSchema(object):
@@ -318,7 +319,17 @@ class Process(plum.process.Process):
         self._calc = self.create_db_record()
         self._setup_db_record()
         if self.inputs._store_provenance:
-            self.calc.store_all()
+            self.calc.store_all(use_cache=self._fast_forward_enabled())
+            if self.calc.has_finished_ok():
+                self._state = plum.process.ProcessState.FINISHED
+                for name, value in self.calc.get_outputs_dict(link_type=LinkType.RETURN).items():
+                    if name.endswith('_{pk}'.format(pk=value.pk)):
+                        continue
+                    self.out(name, value)
+                # This is needed for JobProcess. In that case, the outputs are
+                # returned regardless of whether they end in '_pk'
+                for name, value in self.calc.get_outputs_dict(link_type=LinkType.CREATE).items():
+                    self.out(name, value)
 
         if self.calc.pk is not None:
             return self.calc.pk
@@ -385,14 +396,16 @@ class Process(plum.process.Process):
             if label is not None:
                 self._calc.label = label
 
-    def _can_fast_forward(self, inputs):
-        return False
-
-    def _fast_forward(self):
-        node = None  # Here we should find the old node
-        for k, v in node.get_output_dict():
-            self.out(k, v)
-
+    def _fast_forward_enabled(self):
+        # First priority: inputs
+        try:
+            return self._parsed_inputs['_fast_forward']
+        # Second priority: config
+        except KeyError:
+            return (
+                caching.get_fast_forward_enabled(type(self).__name__) or
+                caching.get_fast_forward_enabled(type(self._calc).__name__)
+            )
 
 class FunctionProcess(Process):
     _func_args = None

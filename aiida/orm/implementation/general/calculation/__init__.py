@@ -8,6 +8,7 @@
 # For further information please visit http://www.aiida.net               #
 ###########################################################################
 
+import abc
 import collections
 
 from aiida.common.utils import classproperty
@@ -82,8 +83,15 @@ class AbstractCalculation(SealableWithUpdatableAttributes):
     calculations run via a scheduler.
     """
 
-    # A tuple with attributes that can be updated even after
-    # the call of the store() method
+    @classproperty
+    def _hash_ignored_attributes(cls):
+        return super(AbstractCalculation, cls)._hash_ignored_attributes + [
+            '_sealed',
+            '_finished',
+        ]
+
+    # The link_type might not be correct while the object is being created.
+    _hash_ignored_inputs = ['CALL']
 
     # Nodes that can be added as input using the use_* methods
     @classproperty
@@ -324,3 +332,24 @@ class AbstractCalculation(SealableWithUpdatableAttributes):
         from aiida.orm.code import Code
         return dict(self.get_inputs(node_type=Code, also_labels=True)).get(
             self._use_methods['code']['linkname'], None)
+
+    @abc.abstractmethod
+    def has_finished_ok(self):
+        """
+        Returns whether the Calculation has finished successfully.
+        """
+        raise NotImplementedError
+
+    def _is_valid_cache(self):
+        return super(AbstractCalculation, self)._is_valid_cache() and self.has_finished_ok()
+
+    def _get_objects_to_hash(self):
+        res = super(AbstractCalculation, self)._get_objects_to_hash()
+        res.append({
+            key: value.get_hash()
+            for key, value in self.get_inputs_dict(
+                link_type=LinkType.INPUT
+            ).items()
+            if key not in self._hash_ignored_inputs
+        })
+        return res

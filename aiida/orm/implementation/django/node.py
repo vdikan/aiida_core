@@ -466,7 +466,7 @@ class Node(AbstractNode):
         #            self._dbnode = DbNode.objects.get(pk=self._dbnode.pk)
         return self._dbnode
 
-    def store_all(self, with_transaction=True):
+    def store_all(self, with_transaction=True, use_cache=False):
         """
         Store the node, together with all input links, if cached, and also the
         linked nodes, if they were not stored yet.
@@ -503,7 +503,7 @@ class Node(AbstractNode):
             # Always without transaction: either it is the context_man here,
             # or it is managed outside
             self._store_input_nodes()
-            self.store(with_transaction=False)
+            self.store(with_transaction=False, use_cache=use_cache)
             self._store_cached_input_links(with_transaction=False)
 
         return self
@@ -558,7 +558,7 @@ class Node(AbstractNode):
             # would have been raised, and the following lines are not executed)
             self._inputlinks_cache.clear()
 
-    def store(self, with_transaction=True):
+    def store(self, with_transaction=True, use_cache=False):
         """
         Store a new node in the DB, also saving its repository directory
         and attributes.
@@ -574,6 +574,8 @@ class Node(AbstractNode):
         :parameter with_transaction: if False, no transaction is used. This
           is meant to be used ONLY if the outer calling function has already
           a transaction open!
+
+        :param bool use_cache: Whether I attempt to find an equal node in the DB.
         """
         # TODO: This needs to be generalized, allowing for flexible methods
         # for storing data and its attributes.
@@ -587,6 +589,7 @@ class Node(AbstractNode):
             context_man = transaction.atomic()
         else:
             context_man = EmptyContextManager()
+
 
         if self._to_be_stored:
 
@@ -604,6 +607,17 @@ class Node(AbstractNode):
             # I assume that if a node exists in the DB, its folder is in place.
             # On the other hand, periodically the user might need to run some
             # bookkeeping utility to check for lone folders.
+
+
+            # For node hashing, if use_cache is true:
+            if use_cache:
+                same_node = self.get_same_node()
+                if same_node is not None:
+                    self._dbnode = same_node.dbnode
+                    self._to_be_stored = False
+                    self._repo_folder = same_node._repo_folder
+                    return self
+
             self._repository_folder.replace_with_folder(
                 self._get_temp_folder().abspath, move=True, overwrite=True)
 
@@ -652,6 +666,9 @@ class Node(AbstractNode):
                         g = Group.get_or_create(name=group_name, type_string=grouptype)[0]
                         g.add_nodes(self)
 
+        from aiida.backends.djsite.db.models import DbExtra
+        # I store the hash without cleaning and without incrementing the nodeversion number
+        DbExtra.set_value_for_node(self.dbnode, 'hash', self.get_hash())
         # This is useful because in this way I can do
         # n = Node().store()
         return self

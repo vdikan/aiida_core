@@ -9,7 +9,9 @@
 ###########################################################################
 
 from aiida.orm.implementation.calculation import Calculation
+from aiida.common.utils import classproperty
 from aiida.common.lang import override
+from aiida.common import caching
 
 class WorkCalculation(Calculation):
     """
@@ -18,6 +20,13 @@ class WorkCalculation(Calculation):
     """
     FINISHED_KEY = '_finished'
     FAILED_KEY = '_failed'
+
+    @classproperty
+    def _hash_ignored_inputs(cls):
+        return super(WorkCalculation, cls)._hash_ignored_inputs + [
+            '_return_pid',
+            '_fast_forward'
+        ]
 
     @override
     def has_finished(self):
