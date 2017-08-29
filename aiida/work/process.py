@@ -14,7 +14,8 @@ import uuid
 from enum import Enum
 import itertools
 
-from plum.port import InputPort, Port, DynamicInputPort
+from plum import port
+from plum.port import Port, DynamicInputPort
 import plum.process
 from plum.process_monitor import MONITOR
 import plum.process_monitor
