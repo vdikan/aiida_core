@@ -52,7 +52,7 @@ install:
     # Install AiiDA with some optional dependencies
     - pip install .[REST,docs,atomic_tools,testing]
     # Unreleased plum version required for fast-forwarding
-    - pip install git+https://bitbucket.org/greschd/plum@edge
+    - pip install git+https://github.com/greschd/plumpy.git@edge
 
 before_script:
     # Here I create the actual DB for submission
