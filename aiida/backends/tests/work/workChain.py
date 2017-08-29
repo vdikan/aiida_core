@@ -190,6 +190,35 @@ class TestWorkchain(AiidaTestCase):
         x = Int(1)
         run(Wf, a=x, b=x)
 
+    def test_serialize_fct(self):
+        class Wf(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(Wf, cls).define(spec)
+                spec.input('foo', valid_type=Int, serialize_fct=lambda x: Int(x))
+                # Try defining an invalid outline
+                spec.outline(cls.test_foo)
+
+            def test_foo(self):
+                assert isinstance(self.inputs.foo, Int)
+
+        run(Wf, foo=1)
+
+    def test_deserialize_fct(self):
+        class Wf(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(Wf, cls).define(spec)
+                spec.input('foo', valid_type=Int, deserialize_fct=lambda x: x.value)
+                # Try defining an invalid outline
+                spec.outline(cls.test_foo)
+
+            def test_foo(self):
+                assert isinstance(self.get_deserialized_input('foo'), int)
+                assert isinstance(self.inputs.foo, Int)
+
+        run(Wf, foo=Int(1))
+
     def test_context(self):
         A = Str("a")
         B = Str("b")
