@@ -274,12 +274,12 @@ class TestExposeProcess(AiidaTestCase):
 
             @override
             def _run(self, **kwargs):
-                assert 'a' in self.inputs
-                assert 'b' in self.inputs
+                assert 'a' in self.inputs.alef
+                assert 'b' in self.inputs.alef
                 assert 'a' in self.inputs.beta
                 assert 'b' in self.inputs.beta
-                assert self.inputs['a'] == Int(1)
-                assert self.inputs['b'] == Int(2)
+                assert self.inputs.alef['a'] == Int(1)
+                assert self.inputs.alef['b'] == Int(2)
                 assert self.inputs.beta['a'] == Int(1)
                 assert self.inputs.beta['b'] == Int(2)
                 SimpleProcess.run(**self.exposed_inputs(SimpleProcess, namespace='alef'))
