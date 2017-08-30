@@ -269,7 +269,7 @@ class TestExposeProcess(AiidaTestCase):
             @classmethod
             def define(cls, spec):
                 super(ExposeProcess, cls).define(spec)
-                spec.expose_inputs(SimpleProcess)
+                spec.expose_inputs(SimpleProcess, namespace='alef')
                 spec.expose_inputs(SimpleProcess, namespace='beta')
 
             @override
