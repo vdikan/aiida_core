@@ -143,6 +143,7 @@ class ProcessSpec(plum.process.ProcessSpec):
         self._inputs = PortNamespace()
         self._outputs = PortNamespace()
         self._exposed_inputs = defaultdict(lambda: defaultdict(list))
+        self._exposed_outputs = defaultdict(lambda: defaultdict(list))
 
     def is_fastforwardable(self):
         return self._fastforwardable
@@ -193,9 +194,6 @@ class ProcessSpec(plum.process.ProcessSpec):
         :param namespace: a namespace in which to place the exposed inputs
         :param exclude: list or tuple of input keys to exclude from being exposed
         """
-        if exclude and include is not None:
-            raise ValueError('exclude and include are mutually exclusive')
-
         if namespace:
             self._inputs[namespace] = PortNamespace(namespace)
             port_namespace = self._inputs[namespace]
@@ -203,20 +201,44 @@ class ProcessSpec(plum.process.ProcessSpec):
             port_namespace = self._inputs
         exposed_inputs_list = self._exposed_inputs[namespace][process_class]
 
-        for name, port in process_class.spec().inputs.iteritems():
-
+        for name, port in self._filter_names(
+            process_class.spec().inputs.iteritems(),
+            exclude=exclude,
+            include=include
+        ):
             if name.startswith('_') or name == 'dynamic':
                 continue
 
+            port_namespace[name] = port
+            exposed_inputs_list.append(name)
+
+    def expose_outputs(self, process_class, exclude=(), include=None):
+        # TODO: Implement namespaces
+        namespace = None
+        exposed_outputs_list = self._exposed_outputs[namespace][process_class]
+        for name, port in self._filter_names(
+            process_class.spec().outputs.items(),
+            exclude=exclude,
+            include=include
+        ):
+            if name.startswith('_') or name == 'dynamic':
+                continue
+            self._outputs[name] = port
+            exposed_outputs_list.append(name)
+
+    @staticmethod
+    def _filter_names(items, exclude, include):
+        if exclude and include is not None:
+            raise ValueError('exclude and include are mutually exclusive')
+
+        for name, port in items:
             if include is not None:
                 if name not in include:
                     continue
             else:
                 if name in exclude:
                     continue
-
-            port_namespace[name] = port
-            exposed_inputs_list.append(name)
+            yield name, port
 
 class Process(plum.process.Process):
     """
@@ -459,6 +481,16 @@ class Process(plum.process.Process):
                     exposed_inputs[name] = inputs[name]
 
         return exposed_inputs
+
+    def exposed_outputs(self, calc, process_class):
+        # TODO: Implement namespaces.
+        namespace = None
+        exposed_outputs_list = self.spec()._exposed_outputs[namespace][process_class]
+        exposed_outputs = {}
+        for name, output in calc.get_outputs_dict().items():
+            if name in exposed_outputs_list:
+                exposed_outputs[name] = output
+        return exposed_outputs
 
     def _create_and_setup_db_record(self):
         self._calc = self.create_db_record()
