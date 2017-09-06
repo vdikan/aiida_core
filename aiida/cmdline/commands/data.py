@@ -11,11 +11,10 @@ import sys
 
 from aiida.backends.utils import load_dbenv, is_dbenv_loaded
 from aiida.cmdline import delayed_load_node as load_node
-from aiida.cmdline.baseclass import (
-    VerdiCommandRouter, VerdiCommandWithSubcommands)
+from aiida.cmdline.baseclass import (VerdiCommandRouter,
+                                     VerdiCommandWithSubcommands)
 from aiida.cmdline.commands.node import _Label, _Description
 from aiida.common.exceptions import MultipleObjectsError
-
 
 
 class Data(VerdiCommandRouter):
@@ -70,17 +69,26 @@ class Listable(object):
 
         self.append_list_cmdline_arguments(parser)
 
-        parser.add_argument('--vseparator', default="\t",
-                            help="specify vertical separator for fields. "
-                                 "Default '\\t'.",
-                            type=str, action='store')
-        parser.add_argument('--header', default=True,
-                            help="print a header with column names. "
-                                 "Default option.",
-                            dest="header", action='store_true')
-        parser.add_argument('--no-header', '-H',
-                            help="do not print a header with column names.",
-                            dest="header", action='store_false')
+        parser.add_argument(
+            '--vseparator',
+            default="\t",
+            help="specify vertical separator for fields. "
+            "Default '\\t'.",
+            type=str,
+            action='store')
+        parser.add_argument(
+            '--header',
+            default=True,
+            help="print a header with column names. "
+            "Default option.",
+            dest="header",
+            action='store_true')
+        parser.add_argument(
+            '--no-header',
+            '-H',
+            help="do not print a header with column names.",
+            dest="header",
+            action='store_false')
 
         args = list(args)
         parsed_args = parser.parse_args(args)
@@ -118,7 +126,8 @@ class Listable(object):
         self.query_past_days(q_object, args)
         self.query_group(q_object, args)
 
-        object_list = self.dataclass.query(q_object).distinct().order_by('ctime')
+        object_list = self.dataclass.query(q_object).distinct().order_by(
+            'ctime')
 
         entry_list = []
         for obj in object_list:
@@ -187,18 +196,38 @@ class Listable(object):
 
         :param parser: instance of argparse.ArgumentParser
         """
-        parser.add_argument('-p', '--past-days', metavar='N',
-                            help="add a filter to show only objects created in the past N days",
-                            type=int, action='store')
-        parser.add_argument('-g', '--group-name', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=str, action='store')
-        parser.add_argument('-G', '--group-pk', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=int, action='store')
-        parser.add_argument('-A', '--all-users', action='store_true', default=False,
-                            help="show groups for all users, rather than only for the"
-                                 "current user")
+        parser.add_argument(
+            '-p',
+            '--past-days',
+            metavar='N',
+            help="add a filter to show only objects created in the past N days",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-g',
+            '--group-name',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=str,
+            action='store')
+        parser.add_argument(
+            '-G',
+            '--group-pk',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-A',
+            '--all-users',
+            action='store_true',
+            default=False,
+            help="show groups for all users, rather than only for the"
+            "current user")
 
     def get_column_names(self):
         """
@@ -246,8 +275,12 @@ class Visualizable(object):
         parser = argparse.ArgumentParser(
             prog=self.get_full_command_name(),
             description='Visualize data object.')
-        parser.add_argument('data_id', type=int, default=None, nargs="+",
-                            help="ID of the data object to be visualized.")
+        parser.add_argument(
+            'data_id',
+            type=int,
+            default=None,
+            nargs="+",
+            help="ID of the data object to be visualized.")
 
         default_format = None
         try:
@@ -258,9 +291,13 @@ class Visualizable(object):
             else:
                 default_format = None
 
-        parser.add_argument('--format', '-f', type=str, default=default_format,
-                            help="Type of the visualization format/tool.",
-                            choices=sorted(self.get_show_plugins().keys()))
+        parser.add_argument(
+            '--format',
+            '-f',
+            type=str,
+            default=default_format,
+            help="Type of the visualization format/tool.",
+            choices=sorted(self.get_show_plugins().keys()))
 
         # Augmenting the command line parameters with ones, that are used by
         # individual plugins
@@ -284,7 +321,7 @@ class Visualizable(object):
         if format is None:
             print >> sys.stderr, (
                 "Default format is not defined, please specify.\n"
-                  "Valid formats are:")
+                "Valid formats are:")
             for i in self.get_show_plugins().keys():
                 print >> sys.stderr, "  {}".format(i)
             sys.exit(1)
@@ -309,7 +346,8 @@ class Visualizable(object):
             try:
                 if not isinstance(n, self.dataclass):
                     print >> sys.stderr, ("Node {} is of class {} instead "
-                          "of {}".format(n, type(n), self.dataclass))
+                                          "of {}".format(
+                                              n, type(n), self.dataclass))
                     sys.exit(1)
             except AttributeError:
                 pass
@@ -352,7 +390,10 @@ class Exportable(object):
                          if i.startswith(self.export_prefix) and \
                          not i.endswith(self.export_parameters_postfix)]  # filter
 
-        return {k: getattr(self, self.export_prefix + k) for k in valid_formats}
+        return {
+            k: getattr(self, self.export_prefix + k)
+            for k in valid_formats
+        }
 
     def export(self, *args):
         """
@@ -364,14 +405,24 @@ class Exportable(object):
         parser = argparse.ArgumentParser(
             prog=self.get_full_command_name(),
             description='Export data object.')
-        parser.add_argument('-o','--output', type=str, default='',
-                            help="If present, store the output directly on a file "
-                                 "with the given name. It is essential to use this option "
-                                 "if more than one file needs to be created.")
-        parser.add_argument('-y', '--overwrite', action='store_true',
-                            help="If passed, overwrite files without checking.")
-        parser.add_argument('data_id', type=int, default=None,
-                            help="ID of the data object to be visualized.")
+        parser.add_argument(
+            '-o',
+            '--output',
+            type=str,
+            default='',
+            help="If present, store the output directly on a file "
+            "with the given name. It is essential to use this option "
+            "if more than one file needs to be created.")
+        parser.add_argument(
+            '-y',
+            '--overwrite',
+            action='store_true',
+            help="If passed, overwrite files without checking.")
+        parser.add_argument(
+            'data_id',
+            type=int,
+            default=None,
+            help="ID of the data object to be visualized.")
 
         self.append_export_cmdline_arguments(parser)
 
@@ -384,9 +435,13 @@ class Exportable(object):
             else:
                 default_format = None
 
-        parser.add_argument('--format', '-f', type=str, default=default_format,
-                            help="Type of the exported file.",
-                            choices=sorted(self.get_export_plugins().keys()))
+        parser.add_argument(
+            '--format',
+            '-f',
+            type=str,
+            default=default_format,
+            help="Type of the exported file.",
+            choices=sorted(self.get_export_plugins().keys()))
 
         # Augmenting the command line parameters with ones, that are used by
         # individual plugins
@@ -410,7 +465,7 @@ class Exportable(object):
         if format is None:
             print >> sys.stderr, (
                 "Default format is not defined, please specify.\n"
-                  "Valid formats are:")
+                "Valid formats are:")
             for i in sorted(self.get_export_plugins().keys()):
                 print >> sys.stderr, "  {}".format(i)
             sys.exit(1)
@@ -443,14 +498,20 @@ class Exportable(object):
         try:
             if not isinstance(n, self.dataclass):
                 print >> sys.stderr, ("Node {} is of class {} instead "
-                      "of {}".format(n, type(n), self.dataclass))
+                                      "of {}".format(n, type(n),
+                                                     self.dataclass))
                 sys.exit(1)
         except AttributeError:
             pass
 
         func(n, output_fname=output_fname, overwrite=overwrite, **parsed_args)
 
-    def print_or_store(self, node, output_fname, fileformat, other_args={}, overwrite=False):
+    def print_or_store(self,
+                       node,
+                       output_fname,
+                       fileformat,
+                       other_args={},
+                       overwrite=False):
         """
         Depending on the parameters, either print the (single) output file on screen, or
         stores the file(s) on disk.
@@ -470,7 +531,10 @@ class Exportable(object):
             if output_fname:
                 try:
                     node.export(
-                        output_fname, fileformat=fileformat, overwrite=overwrite, **other_args)
+                        output_fname,
+                        fileformat=fileformat,
+                        overwrite=overwrite,
+                        **other_args)
                 except OSError as e:
                     print >> sys.stderr, "verdi: ERROR while exporting file:"
                     print >> sys.stderr, e.message
@@ -513,7 +577,10 @@ class Importable(object):
                          if i.startswith(self.import_prefix) and \
                          not i.endswith(self.import_parameters_postfix)]  # filter
 
-        return {k: getattr(self, self.import_prefix + k) for k in valid_formats}
+        return {
+            k: getattr(self, self.import_prefix + k)
+            for k in valid_formats
+        }
 
     def importfile(self, *args):
         import argparse, sys
@@ -521,9 +588,12 @@ class Importable(object):
         parser = argparse.ArgumentParser(
             prog=self.get_full_command_name(),
             description='Import data object.')
-        parser.add_argument('--file', type=str, default=None,
-                            help="Path of the imported file. Reads from "
-                                 "standard input if not specified.")
+        parser.add_argument(
+            '--file',
+            type=str,
+            default=None,
+            help="Path of the imported file. Reads from "
+            "standard input if not specified.")
 
         default_format = None
         try:
@@ -534,9 +604,13 @@ class Importable(object):
             else:
                 default_format = None
 
-        parser.add_argument('--format', '-f', type=str, default=default_format,
-                            help="Type of the imported file.",
-                            choices=sorted(self.get_import_plugins().keys()))
+        parser.add_argument(
+            '--format',
+            '-f',
+            type=str,
+            default=default_format,
+            help="Type of the imported file.",
+            choices=sorted(self.get_import_plugins().keys()))
 
         # Augmenting the command line parameters with ones, that are used by
         # individual plugins
@@ -555,7 +629,7 @@ class Importable(object):
         if format is None:
             print >> sys.stderr, (
                 "Default format is not defined, please specify.\n"
-                  "Valid formats are:")
+                "Valid formats are:")
             for i in self.get_import_plugins().keys():
                 print >> sys.stderr, "  {}".format(i)
             sys.exit(1)
@@ -592,12 +666,15 @@ class Depositable(object):
         """
         Get the list of all implemented deposition methods for data class.
         """
-        method_names = dir(self) # get list of class methods names
+        method_names = dir(self)  # get list of class methods names
         valid_formats = [ i[len(self.deposit_prefix):] for i in method_names
                          if i.startswith(self.deposit_prefix) and \
                             not i.endswith(self.deposit_parameters_postfix)] # filter
 
-        return {k: getattr(self,self.deposit_prefix + k) for k in valid_formats}
+        return {
+            k: getattr(self, self.deposit_prefix + k)
+            for k in valid_formats
+        }
 
     def deposit(self, *args):
         """
@@ -610,8 +687,11 @@ class Depositable(object):
         parser = argparse.ArgumentParser(
             prog=self.get_full_command_name(),
             description='Deposit data object.')
-        parser.add_argument('data_id', type=int, default=None,
-                            help="ID of the data object to be deposited.")
+        parser.add_argument(
+            'data_id',
+            type=int,
+            default=None,
+            help="ID of the data object to be deposited.")
 
         default_database = None
         try:
@@ -622,9 +702,13 @@ class Depositable(object):
             else:
                 default_database = None
 
-        parser.add_argument('--database', '-d', type=str, default=default_database,
-                            help="Label of the database for deposition.",
-                            choices=self.get_deposit_plugins().keys())
+        parser.add_argument(
+            '--database',
+            '-d',
+            type=str,
+            default=default_database,
+            help="Label of the database for deposition.",
+            choices=self.get_deposit_plugins().keys())
 
         # Augmenting the command line parameters with ones, that are used by
         # individual plugins
@@ -632,7 +716,7 @@ class Depositable(object):
             if not cmd.startswith(self.deposit_prefix) or \
                not cmd.endswith(self.deposit_parameters_postfix):
                 continue
-            getattr(self,cmd)(parser)
+            getattr(self, cmd)(parser)
 
         args = list(args)
         parsed_args = vars(parser.parse_args(args))
@@ -648,7 +732,7 @@ class Depositable(object):
         if database is None:
             print >> sys.stderr, (
                 "Default database is not defined, please specify.\n"
-                  "Valid databases are:")
+                "Valid databases are:")
             for i in self.get_deposit_plugins().keys():
                 print >> sys.stderr, "  {}".format(i)
             sys.exit(1)
@@ -667,196 +751,17 @@ class Depositable(object):
         n = load_node(data_id)
 
         try:
-            if not isinstance(n,self.dataclass):
+            if not isinstance(n, self.dataclass):
                 print >> sys.stderr, ("Node {} is of class {} instead "
-                      "of {}".format(n,type(n),self.dataclass))
+                                      "of {}".format(n, type(n),
+                                                     self.dataclass))
                 sys.exit(1)
         except AttributeError:
             pass
 
-        calc = func(n,**parsed_args)
+        calc = func(n, **parsed_args)
         print calc
 
-
-####### PSF PATCH
-# Psf data class for verdi command line definition
-class _Psf(VerdiCommandWithSubcommands, Importable):
-    """
-    Setup and manage psf to be used
-
-    This command allows to list and configure psf pseudos.
-    """
-
-    def __init__(self):
-        """
-        A dictionary with valid commands and functions to be called.
-        """
-        if not is_dbenv_loaded():
-            load_dbenv()
-        # from aiida.orm.data.upf import UpfData
-        from aiida_siesta.data.psf import PsfData
-
-        self.dataclass = PsfData
-        self.valid_subcommands = {
-            'uploadfamily': (self.uploadfamily, self.complete_auto),
-            'listfamilies': (self.listfamilies, self.complete_none),
-            'import': (self.importfile, self.complete_none),
-            'exportfamily': (self.exportfamily, self.complete_auto)
-        }
-
-    def uploadfamily(self, *args):
-        """
-        Upload a new pseudopotential family.
-
-        Returns the numbers of files found and the number of nodes uploaded.
-
-        Call without parameters to get some help.
-        """
-        import os.path
-
-        if not len(args) == 3 and not len(args) == 4:
-            print >> sys.stderr, ("After 'psf uploadfamily' there should be three "
-                                  "arguments:")
-            print >> sys.stderr, ("folder, group_name, group_description "
-                                  "[OPTIONAL: --stop-if-existing]\n")
-            sys.exit(1)
-
-        folder = os.path.abspath(args[0])
-        group_name = args[1]
-        group_description = args[2]
-        stop_if_existing = False
-
-        if len(args) == 4:
-            if args[3] == "--stop-if-existing":
-                stop_if_existing = True
-            else:
-                print >> sys.stderr, 'Unknown directive: ' + args[3]
-                sys.exit(1)
-
-        if (not os.path.isdir(folder)):
-            print >> sys.stderr, 'Cannot find directory: ' + folder
-            sys.exit(1)
-
-        # import aiida.orm.data.upf as upf
-        import aiida_siesta.data.psf as psf
-
-        files_found, files_uploaded = psf.upload_psf_family(folder, group_name,
-                                                            group_description, stop_if_existing)
-
-        print "PSF files found: {}. New files uploaded: {}".format(files_found, files_uploaded)
-
-    def listfamilies(self, *args):
-        """
-        Print on screen the list of psf families installed
-        """
-        # note that the following command requires that the psfdata has a
-        # key called element. As such, it is not well separated.
-        import argparse
-
-        parser = argparse.ArgumentParser(
-            prog=self.get_full_command_name(),
-            description='List AiiDA psf families.')
-        parser.add_argument('-e', '--element', nargs='+', type=str, default=None,
-                            help="Filter the families only to those containing "
-                                 "a pseudo for each of the specified elements")
-        parser.add_argument('-d', '--with-description',
-                            dest='with_description', action='store_true',
-                            help="Show also the description for the PSF family")
-        parser.set_defaults(with_description=False)
-
-        args = list(args)
-        parsed_args = parser.parse_args(args)
-
-        from aiida.orm import DataFactory
-        # from aiida.orm.data.upf import UPFGROUP_TYPE
-        from aiida_siesta.data.psf import PSFGROUP_TYPE
-
-        PsfData = DataFactory('siesta.psf')
-        from aiida.orm.querybuilder import QueryBuilder
-        from aiida.orm.group import Group
-        qb = QueryBuilder()
-        qb.append(PsfData, tag='psfdata')
-        if parsed_args.element is not None:
-            qb.add_filter(PsfData, {'attributes.element': {'in': parsed_args.element}})
-        qb.append(
-            Group,
-            group_of='psfdata', tag='group',
-            project=["name", "description"],
-            filters={"type": {'==': PSFGROUP_TYPE}}
-        )
-
-        qb.distinct()
-        if qb.count() > 0:
-            for res in qb.dict():
-                group_name = res.get("group").get("name")
-                group_desc = res.get("group").get("description")
-                qb = QueryBuilder()
-                qb.append(
-                    Group,
-                    tag='thisgroup',
-                    filters={"name":  {'like': group_name}}
-                )
-                qb.append(
-                    PsfData,
-                    project=["id"],
-                    member_of='thisgroup'
-                )
-
-                if parsed_args.with_description:
-                    description_string = ": {}".format(group_desc)
-                else:
-                    description_string = ""
-
-                print "* {} [{} pseudos]{}".format(group_name, qb.count(),
-                                                   description_string)
-
-        else:
-            print "No valid PSF pseudopotential family found."
-
-    def exportfamily(self, *args):
-        """
-        Export a pseudopotential family into a folder.
-        Call without parameters to get some help.
-        """
-        import os
-        from aiida.common.exceptions import NotExistent
-        from aiida.orm import DataFactory
-
-        if not len(args) == 2:
-            print >> sys.stderr, ("After 'psf export' there should be two "
-                                  "arguments:")
-            print >> sys.stderr, ("folder, psf_family_name\n")
-            sys.exit(1)
-
-        folder = os.path.abspath(args[0])
-        group_name = args[1]
-
-        PsfData = DataFactory('siesta.psf')
-        try:
-            group = PsfData.get_psf_group(group_name)
-        except NotExistent:
-            print >> sys.stderr, ("psf family {} not found".format(group_name))
-
-        for u in group.nodes:
-            dest_path = os.path.join(folder,u.filename)
-            if not os.path.isfile(dest_path):
-                with open(dest_path,'w') as dest:
-                    with u._get_folder_pathsubfolder.open(u.filename) as source:
-                        dest.write(source.read())
-            else:
-                print >> sys.stdout, ("File {} is already present in the "
-                                      "destination folder".format(u.filename))
-
-    def _import_psf(self, filename, **kwargs):
-        """
-        Importer from PSF.
-        """
-        try:
-            node, _ = self.dataclass.get_or_create(filename)
-            print node
-        except ValueError as e:
-            print e
-####### PSF PATCH
 
 # Note: this class should not be exposed directly in the main module,
 # otherwise it becomes a command of 'verdi'. Instead, we want it to be a
@@ -895,8 +800,9 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
         import os.path
 
         if not len(args) == 3 and not len(args) == 4:
-            print >> sys.stderr, ("After 'upf uploadfamily' there should be three "
-                                  "arguments:")
+            print >> sys.stderr, (
+                "After 'upf uploadfamily' there should be three "
+                "arguments:")
             print >> sys.stderr, ("folder, group_name, group_description "
                                   "[OPTIONAL: --stop-if-existing]\n")
             sys.exit(1)
@@ -919,10 +825,11 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
 
         import aiida.orm.data.upf as upf
 
-        files_found, files_uploaded = upf.upload_upf_family(folder, group_name,
-                                                            group_description, stop_if_existing)
+        files_found, files_uploaded = upf.upload_upf_family(
+            folder, group_name, group_description, stop_if_existing)
 
-        print "UPF files found: {}. New files uploaded: {}".format(files_found, files_uploaded)
+        print "UPF files found: {}. New files uploaded: {}".format(
+            files_found, files_uploaded)
 
     def listfamilies(self, *args):
         """
@@ -935,12 +842,20 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
         parser = argparse.ArgumentParser(
             prog=self.get_full_command_name(),
             description='List AiiDA upf families.')
-        parser.add_argument('-e', '--element', nargs='+', type=str, default=None,
-                            help="Filter the families only to those containing "
-                                 "a pseudo for each of the specified elements")
-        parser.add_argument('-d', '--with-description',
-                            dest='with_description', action='store_true',
-                            help="Show also the description for the UPF family")
+        parser.add_argument(
+            '-e',
+            '--element',
+            nargs='+',
+            type=str,
+            default=None,
+            help="Filter the families only to those containing "
+            "a pseudo for each of the specified elements")
+        parser.add_argument(
+            '-d',
+            '--with-description',
+            dest='with_description',
+            action='store_true',
+            help="Show also the description for the UPF family")
         parser.set_defaults(with_description=False)
 
         args = list(args)
@@ -955,13 +870,18 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
         qb = QueryBuilder()
         qb.append(UpfData, tag='upfdata')
         if parsed_args.element is not None:
-            qb.add_filter(UpfData, {'attributes.element': {'in': parsed_args.element}})
+            qb.add_filter(UpfData,
+                          {'attributes.element': {
+                              'in': parsed_args.element
+                          }})
         qb.append(
             Group,
-            group_of='upfdata', tag='group',
+            group_of='upfdata',
+            tag='group',
             project=["name", "description"],
-            filters={"type": {'==': UPFGROUP_TYPE}}
-        )
+            filters={"type": {
+                '==': UPFGROUP_TYPE
+            }})
 
         qb.distinct()
         if qb.count() > 0:
@@ -972,20 +892,18 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
                 qb.append(
                     Group,
                     tag='thisgroup',
-                    filters={"name":  {'like': group_name}}
-                )
-                qb.append(
-                    UpfData,
-                    project=["id"],
-                    member_of='thisgroup'
-                )
+                    filters={"name": {
+                        'like': group_name
+                    }})
+                qb.append(UpfData, project=["id"], member_of='thisgroup')
 
                 if parsed_args.with_description:
                     description_string = ": {}".format(group_desc)
                 else:
                     description_string = ""
 
-                print "* {} [{} pseudos]{}".format(group_name, qb.count(),
+                print "* {} [{} pseudos]{}".format(group_name,
+                                                   qb.count(),
                                                    description_string)
 
         else:
@@ -1016,10 +934,11 @@ class _Upf(VerdiCommandWithSubcommands, Importable):
             print >> sys.stderr, ("upf family {} not found".format(group_name))
 
         for u in group.nodes:
-            dest_path = os.path.join(folder,u.filename)
+            dest_path = os.path.join(folder, u.filename)
             if not os.path.isfile(dest_path):
-                with open(dest_path,'w') as dest:
-                    with u._get_folder_pathsubfolder.open(u.filename) as source:
+                with open(dest_path, 'w') as dest:
+                    with u._get_folder_pathsubfolder.open(
+                            u.filename) as source:
                         dest.write(source.read())
             else:
                 print >> sys.stdout, ("File {} is already present in the "
@@ -1085,20 +1004,25 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
 
         bdata_filters = {}
         self.query_past_days_qb(bdata_filters, args)
-        qb.append(BandsData, tag="bdata", created_by="creator",
-                  filters=bdata_filters,
-                  project=["id", "label", "ctime"]
-                  )
+        qb.append(
+            BandsData,
+            tag="bdata",
+            created_by="creator",
+            filters=bdata_filters,
+            project=["id", "label", "ctime"])
 
         group_filters = {}
         self.query_group_qb(group_filters, args)
         if group_filters:
-            qb.append(Group, tag="group", filters=group_filters,
-                      group_of="bdata")
+            qb.append(
+                Group, tag="group", filters=group_filters, group_of="bdata")
 
-        qb.append(StructureData, tag="sdata", ancestor_of="bdata",
-                  # We don't care about the creator of StructureData
-                  project=["id", "attributes.kinds", "attributes.sites"])
+        qb.append(
+            StructureData,
+            tag="sdata",
+            ancestor_of="bdata",
+            # We don't care about the creator of StructureData
+            project=["id", "attributes.kinds", "attributes.sites"])
 
         qb.order_by({StructureData: {'ctime': 'desc'}})
 
@@ -1122,15 +1046,12 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
 
                 if args.element is not None:
                     all_symbols = [_["symbols"][0] for _ in akinds]
-                    if not any([s in args.element for s in all_symbols]
-                               ):
+                    if not any([s in args.element for s in all_symbols]):
                         continue
 
                 if args.element_only is not None:
                     all_symbols = [_["symbols"][0] for _ in akinds]
-                    if not all(
-                            [s in all_symbols for s in args.element_only]
-                            ):
+                    if not all([s in all_symbols for s in args.element_only]):
                         continue
 
                 # We want only the StructureData that have attributes
@@ -1141,21 +1062,23 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
                 for k in akinds:
                     symbols = k['symbols']
                     weights = k['weights']
-                    symbol_dict[k['name']] = get_symbols_string(symbols,
-                                                                weights)
+                    symbol_dict[k['name']] = get_symbols_string(
+                        symbols, weights)
 
                 try:
                     symbol_list = []
                     for s in asites:
                         symbol_list.append(symbol_dict[s['kind_name']])
-                    formula = get_formula(symbol_list,
-                                          mode=args.formulamode)
+                    formula = get_formula(symbol_list, mode=args.formulamode)
                 # If for some reason there is no kind with the name
                 # referenced by the site
                 except KeyError:
                     formula = "<<UNKNOWN>>"
-                entry_list.append([str(bid), str(formula),
-                                   bdate.strftime('%d %b %Y'), blabel])
+                entry_list.append([
+                    str(bid),
+                    str(formula),
+                    bdate.strftime('%d %b %Y'), blabel
+                ])
 
         return entry_list
 
@@ -1166,30 +1089,65 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
 
         :param parser: instance of argparse.ArgumentParser
         """
-        parser.add_argument('-e', '--element', nargs='+', type=str, default=None,
-                            help="Print all bandsdatas from structures "
-                                 "containing desired elements")
-        parser.add_argument('-eo', '--element-only', nargs='+', type=str, default=None,
-                            help="Print all bandsdatas from structures "
-                                 "containing only the selected elements")
-        parser.add_argument('-f', '--formulamode', metavar='FORMULA_MODE',
-                            type=str, default='hill',
-                            help="Formula printing mode (hill, hill_compact,"
-                                 " reduce, group, count, or count_compact)"
-                                 " (if None, does not print the formula)",
-                            action='store')
-        parser.add_argument('-p', '--past-days', metavar='N',
-                            help="Add a filter to show only bandsdatas created in the past N days",
-                            type=int, action='store')
-        parser.add_argument('-g', '--group-name', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=str, action='store')
-        parser.add_argument('-G', '--group-pk', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=int, action='store')
-        parser.add_argument('-A', '--all-users', action='store_true', default=False,
-                            help="show groups for all users, rather than only for the"
-                                 "current user")
+        parser.add_argument(
+            '-e',
+            '--element',
+            nargs='+',
+            type=str,
+            default=None,
+            help="Print all bandsdatas from structures "
+            "containing desired elements")
+        parser.add_argument(
+            '-eo',
+            '--element-only',
+            nargs='+',
+            type=str,
+            default=None,
+            help="Print all bandsdatas from structures "
+            "containing only the selected elements")
+        parser.add_argument(
+            '-f',
+            '--formulamode',
+            metavar='FORMULA_MODE',
+            type=str,
+            default='hill',
+            help="Formula printing mode (hill, hill_compact,"
+            " reduce, group, count, or count_compact)"
+            " (if None, does not print the formula)",
+            action='store')
+        parser.add_argument(
+            '-p',
+            '--past-days',
+            metavar='N',
+            help=
+            "Add a filter to show only bandsdatas created in the past N days",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-g',
+            '--group-name',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=str,
+            action='store')
+        parser.add_argument(
+            '-G',
+            '--group-pk',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-A',
+            '--all-users',
+            action='store_true',
+            default=False,
+            help="show groups for all users, rather than only for the"
+            "current user")
 
     def append_export_cmdline_arguments(self, parser):
         """
@@ -1199,14 +1157,24 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         """
         from aiida.common.utils import Prettifier
 
-        parser.add_argument('--prettify-format', type=str, default=None,
-                            choices=Prettifier.get_prettifiers(),
-                            help = 'The style of labels for the prettifier')
-        parser.add_argument('--y-min-lim', type=float, default=None,
-                            help = 'The minimum value for the y axis. Default: minimum of all bands')
-        parser.add_argument('--y-max-lim', type=float, default=None,
-                            help = 'The maximum value for the y axis. Default: maximum of all bands')
-
+        parser.add_argument(
+            '--prettify-format',
+            type=str,
+            default=None,
+            choices=Prettifier.get_prettifiers(),
+            help='The style of labels for the prettifier')
+        parser.add_argument(
+            '--y-min-lim',
+            type=float,
+            default=None,
+            help=
+            'The minimum value for the y axis. Default: minimum of all bands')
+        parser.add_argument(
+            '--y-max-lim',
+            type=float,
+            default=None,
+            help=
+            'The maximum value for the y axis. Default: maximum of all bands')
 
     def get_column_names(self):
         """
@@ -1221,16 +1189,23 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         """
         Export a .agr file, to be visualized with the XMGrace plotting software.
         """
-        self.print_or_store(node, output_fname, fileformat='agr', overwrite=overwrite,
-                            other_args=kwargs)
-
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='agr',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_agr_batch(self, node, output_fname, overwrite, **kwargs):
         """
         Export a .agr batch file, to be visualized with the XMGrace plotting software.
         """
-        self.print_or_store(node, output_fname, fileformat='agr_batch', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='agr_batch',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_gnuplot(self, node, output_fname, overwrite, **kwargs):
         """
@@ -1240,16 +1215,24 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         Run with 'gnuplot -p filename' to see the plot (and keep the window with
         the plot open).
         """
-        self.print_or_store(node, output_fname, fileformat='gnuplot', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='gnuplot',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_dat_multicolumn(self, node, output_fname, overwrite, **kwargs):
         """
         Export a .dat file with one line per kpoint, with multiple energy values
         on the same line separated by spaces.
         """
-        self.print_or_store(node, output_fname, fileformat='dat_multicolumn', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='dat_multicolumn',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_dat_blocks(self, node, output_fname, overwrite, **kwargs):
         """
@@ -1257,8 +1240,12 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         with multiple bands separated in stanzas (i.e. having at least an empty
         newline inbetween).
         """
-        self.print_or_store(node, output_fname, fileformat='dat_blocks', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='dat_blocks',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_json(self, node, output_fname, overwrite, **kwargs):
         """
@@ -1266,26 +1253,36 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         with multiple bands separated in stanzas (i.e. having at least an empty
         newline inbetween).
         """
-        self.print_or_store(node, output_fname, fileformat='json', overwrite=overwrite,
-                            other_args=kwargs)
-
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='json',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_mpl_singlefile(self, node, output_fname, overwrite, **kwargs):
         """
         Export a .py file that would produce the plot using matplotlib
         when run with python (with data dumped within the same python file)
         """
-        self.print_or_store(node, output_fname, fileformat='mpl_singlefile', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='mpl_singlefile',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_mpl_withjson(self, node, output_fname, overwrite, **kwargs):
         """
         Export a .py file that would produce the plot using matplotlib
         when run with python (with data dumped in an external json filee)
         """
-        self.print_or_store(node, output_fname, fileformat='mpl_withjson', overwrite=overwrite,
-                            other_args=kwargs)
-
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='mpl_withjson',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_mpl_png(self, node, output_fname, overwrite, **kwargs):
         """
@@ -1294,8 +1291,12 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         if not output_fname:
             print >> sys.stderr, "To export to PNG please always specify the filename with the -o option"
             sys.exit(1)
-        self.print_or_store(node, output_fname, fileformat='mpl_png', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='mpl_png',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_mpl_pdf(self, node, output_fname, overwrite, **kwargs):
         """
@@ -1304,8 +1305,12 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         if not output_fname:
             print >> sys.stderr, "To export to PDF please always specify the filename with the -o option"
             sys.exit(1)
-        self.print_or_store(node, output_fname, fileformat='mpl_pdf', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='mpl_pdf',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _show_xmgrace(self, exec_name, list_bands):
         """
@@ -1319,8 +1324,10 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
         for iband, bands in enumerate(list_bands):
             # extract number of bands
             nbnds = bands.get_bands().shape[1]
-            text, _ = bands._exportstring('agr', setnumber_offset=current_band_number,
-                                       color_number=numpy.mod(iband + 1, max_num_agr_colors))
+            text, _ = bands._exportstring(
+                'agr',
+                setnumber_offset=current_band_number,
+                color_number=numpy.mod(iband + 1, max_num_agr_colors))
             # write a tempfile
             f = tempfile.NamedTemporaryFile(suffix='.agr')
             f.write(text)
@@ -1334,26 +1341,20 @@ class _Bands(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable):
             _ = [f.close() for f in list_files]
         except subprocess.CalledProcessError:
             # The program died: just print a message
-            print "Note: the call to {} ended with an error.".format(
-                exec_name)
+            print "Note: the call to {} ended with an error.".format(exec_name)
             _ = [f.close() for f in list_files]
         except OSError as e:
             _ = [f.close() for f in list_files]
             if e.errno == 2:
-                print ("No executable '{}' found. Add to the path, "
-                       "or try with an absolute path.".format(
-                    exec_name))
+                print("No executable '{}' found. Add to the path, "
+                      "or try with an absolute path.".format(exec_name))
                 sys.exit(1)
             else:
                 raise
 
 
-class _Structure(VerdiCommandWithSubcommands,
-                 Listable,
-                 Visualizable,
-                 Exportable,
-                 Importable,
-                 Depositable):
+class _Structure(VerdiCommandWithSubcommands, Listable, Visualizable,
+                 Exportable, Importable, Depositable):
     """
     Visualize AiIDA structures
     """
@@ -1399,16 +1400,18 @@ class _Structure(VerdiCommandWithSubcommands,
 
         st_data_filters = {}
         self.query_past_days_qb(st_data_filters, args)
-        qb.append(StructureData, tag="struc", created_by="creator",
-                  filters=st_data_filters,
-                  project=["id", "label", "attributes.kinds",
-                           "attributes.sites"])
+        qb.append(
+            StructureData,
+            tag="struc",
+            created_by="creator",
+            filters=st_data_filters,
+            project=["id", "label", "attributes.kinds", "attributes.sites"])
 
         group_filters = {}
         self.query_group_qb(group_filters, args)
         if group_filters:
-            qb.append(Group, tag="group", filters=group_filters,
-                      group_of="struc")
+            qb.append(
+                Group, tag="group", filters=group_filters, group_of="struc")
 
         struc_list_data = qb.distinct()
 
@@ -1422,8 +1425,7 @@ class _Structure(VerdiCommandWithSubcommands,
                 # it will be pushed in the query.
                 if args.element is not None:
                     all_symbols = [_["symbols"][0] for _ in akinds]
-                    if not any([s in args.element for s in all_symbols]
-                               ):
+                    if not any([s in args.element for s in all_symbols]):
                         continue
 
                     if args.elementonly:
@@ -1438,15 +1440,14 @@ class _Structure(VerdiCommandWithSubcommands,
                 for k in akinds:
                     symbols = k['symbols']
                     weights = k['weights']
-                    symbol_dict[k['name']] = get_symbols_string(symbols,
-                                                                weights)
+                    symbol_dict[k['name']] = get_symbols_string(
+                        symbols, weights)
 
                 try:
                     symbol_list = []
                     for s in asites:
                         symbol_list.append(symbol_dict[s['kind_name']])
-                    formula = get_formula(symbol_list,
-                                          mode=args.formulamode)
+                    formula = get_formula(symbol_list, mode=args.formulamode)
                 # If for some reason there is no kind with the name
                 # referenced by the site
                 except KeyError:
@@ -1456,29 +1457,62 @@ class _Structure(VerdiCommandWithSubcommands,
         return entry_list
 
     def append_list_cmdline_arguments(self, parser):
-        parser.add_argument('-e', '--element', nargs='+', type=str, default=None,
-                            help="Print all structures containing desired elements")
-        parser.add_argument('-eo', '--elementonly', action='store_true',
-                            help="If set, structures do not contain different "
-                                 "elements (to be used with -e option)")
-        parser.add_argument('-f', '--formulamode', metavar='FORMULA_MODE',
-                            type=str, default='hill',
-                            help="Formula printing mode (hill, hill_compact,"
-                                 " reduce, group, count, or count_compact)"
-                                 " (if None, does not print the formula)",
-                            action='store')
-        parser.add_argument('-p', '--past-days', metavar='N',
-                            help="Add a filter to show only structures created in the past N days",
-                            type=int, action='store')
-        parser.add_argument('-g', '--group-name', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=str, action='store')
-        parser.add_argument('-G', '--group-pk', metavar='N', nargs="+", default=None,
-                            help="add a filter to show only objects belonging to groups",
-                            type=int, action='store')
-        parser.add_argument('-A', '--all-users', action='store_true', default=False,
-                            help="show groups for all users, rather than only for the"
-                                 "current user")
+        parser.add_argument(
+            '-e',
+            '--element',
+            nargs='+',
+            type=str,
+            default=None,
+            help="Print all structures containing desired elements")
+        parser.add_argument(
+            '-eo',
+            '--elementonly',
+            action='store_true',
+            help="If set, structures do not contain different "
+            "elements (to be used with -e option)")
+        parser.add_argument(
+            '-f',
+            '--formulamode',
+            metavar='FORMULA_MODE',
+            type=str,
+            default='hill',
+            help="Formula printing mode (hill, hill_compact,"
+            " reduce, group, count, or count_compact)"
+            " (if None, does not print the formula)",
+            action='store')
+        parser.add_argument(
+            '-p',
+            '--past-days',
+            metavar='N',
+            help=
+            "Add a filter to show only structures created in the past N days",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-g',
+            '--group-name',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=str,
+            action='store')
+        parser.add_argument(
+            '-G',
+            '--group-pk',
+            metavar='N',
+            nargs="+",
+            default=None,
+            help="add a filter to show only objects belonging to groups",
+            type=int,
+            action='store')
+        parser.add_argument(
+            '-A',
+            '--all-users',
+            action='store_true',
+            default=False,
+            help="show groups for all users, rather than only for the"
+            "current user")
 
     def get_column_names(self):
         return ["ID", "formula", "label"]
@@ -1506,14 +1540,13 @@ class _Structure(VerdiCommandWithSubcommands,
                     exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                        exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
 
-    def _show_ase(self,exec_name,structure_list):
+    def _show_ase(self, exec_name, structure_list):
         """
         Plugin to show the structure with the ASE visualizer
         """
@@ -1547,9 +1580,8 @@ class _Structure(VerdiCommandWithSubcommands,
                     exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                        exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
@@ -1573,14 +1605,18 @@ class _Structure(VerdiCommandWithSubcommands,
                     exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                        exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
 
-    def _export_tcod(self, node, output_fname, overwrite, parameter_data=None, **kwargs):
+    def _export_tcod(self,
+                     node,
+                     output_fname,
+                     overwrite,
+                     parameter_data=None,
+                     **kwargs):
         """
         Plugin for TCOD
         """
@@ -1590,36 +1626,52 @@ class _Structure(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        self.print_or_store(node, output_fname, fileformat='tcod', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='tcod',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters for TCOD
         """
         from aiida.tools.dbexporters.tcod import extend_with_cmdline_parameters
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
 
     def _export_xsf(self, node, output_fname, overwrite, **kwargs):
         """
         Exporter to XSF.
         """
-        self.print_or_store(node, output_fname, fileformat='xsf', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='xsf',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_cif(self, node, output_fname, overwrite, **kwargs):
         """
         Exporter to CIF.
         """
-        self.print_or_store(node, output_fname, fileformat='cif', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='cif',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_xyz(self, node, output_fname, overwrite, **kwargs):
         """
         Exporter to XYZ.
         """
-        self.print_or_store(node, output_fname, fileformat='xyz', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='xyz',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _import_xyz_parameters(self, parser):
         """
@@ -1629,17 +1681,39 @@ class _Structure(VerdiCommandWithSubcommands,
         # We can increase the size of the cell from the minimal cell
         # The minimal cell is the cell the just accomodates the structure given,
         # defined by the minimum and maximum of position in each dimension
-        parser.add_argument('--vacuum-factor', type=float, default=1.0,
-                help = 'The factor by which the cell accomodating the structure should be increased, default: 1.0')
+        parser.add_argument(
+            '--vacuum-factor',
+            type=float,
+            default=1.0,
+            help=
+            'The factor by which the cell accomodating the structure should be increased, default: 1.0'
+        )
         #To that increased cell, we can also add a "safety margin"
-        parser.add_argument('--vacuum-addition', type=float, default=10.0,
-                help = 'The distance to add to the unit cell after vacuum-factor was applied to expand in each dimension, default: 10.0')
-        parser.add_argument('--pbc', type=int, nargs = 3, default= [0,0,0],
-                help = """
+        parser.add_argument(
+            '--vacuum-addition',
+            type=float,
+            default=10.0,
+            help=
+            'The distance to add to the unit cell after vacuum-factor was applied to expand in each dimension, default: 10.0'
+        )
+        parser.add_argument(
+            '--pbc',
+            type=int,
+            nargs=3,
+            default=[0, 0, 0],
+            help="""
                 Set periodic boundary conditions for each lattice direction,
                 0 for no periodicity, any other integer for periodicity""")
-        parser.add_argument('--view', action='store_true', default = False, help= 'View resulting structure using ASE')
-        parser.add_argument('--dont-store', action='store_true', default = False, help= 'Do not store the structure')
+        parser.add_argument(
+            '--view',
+            action='store_true',
+            default=False,
+            help='View resulting structure using ASE')
+        parser.add_argument(
+            '--dont-store',
+            action='store_true',
+            default=False,
+            help='Do not store the structure')
 
     def _import_xyz(self, filename, **kwargs):
         """
@@ -1653,25 +1727,25 @@ class _Structure(VerdiCommandWithSubcommands,
         view_in_ase = kwargs.pop('view')
 
         print 'importing XYZ-structure from: \n  {}'.format(abspath(filename))
-        filepath =  abspath(filename)
+        filepath = abspath(filename)
         with open(filepath) as f:
             xyz_txt = f.read()
         new_structure = self.dataclass()
         try:
             new_structure._parse_xyz(xyz_txt)
-            new_structure._adjust_default_cell( vacuum_addition = vacuum_addition,
-                                                vacuum_factor = vacuum_factor,
-                                                pbc = pbc)
+            new_structure._adjust_default_cell(
+                vacuum_addition=vacuum_addition,
+                vacuum_factor=vacuum_factor,
+                pbc=pbc)
 
             if not dont_store:
                 new_structure.store()
             if view_in_ase:
                 from ase.visualize import view
                 view(new_structure.get_ase())
-            print  (
-                    '  Succesfully imported structure {}, '
-                    '(PK = {})'.format(new_structure.get_formula(), new_structure.pk)
-                )
+            print('  Succesfully imported structure {}, '
+                  '(PK = {})'.format(new_structure.get_formula(),
+                                     new_structure.pk))
 
         except ValueError as e:
             print e
@@ -1686,7 +1760,7 @@ class _Structure(VerdiCommandWithSubcommands,
         view_in_ase = kwargs.pop('view')
 
         print 'importing structure from: \n  {}'.format(abspath(filename))
-        filepath =  abspath(filename)
+        filepath = abspath(filename)
 
         try:
             new_structure = get_structuredata_from_qeinput(filepath=filepath)
@@ -1696,10 +1770,9 @@ class _Structure(VerdiCommandWithSubcommands,
             if view_in_ase:
                 from ase.visualize import view
                 view(new_structure.get_ase())
-            print  (
-                    '  Succesfully imported structure {}, '
-                    '(PK = {})'.format(new_structure.get_formula(), new_structure.pk)
-                )
+            print('  Succesfully imported structure {}, '
+                  '(PK = {})'.format(new_structure.get_formula(),
+                                     new_structure.pk))
 
         except ValueError as e:
             print e
@@ -1715,20 +1788,20 @@ class _Structure(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        return deposit(node,parameters=parameters,**kwargs)
+        return deposit(node, parameters=parameters, **kwargs)
 
-    def _deposit_tcod_parameters(self,parser,**kwargs):
+    def _deposit_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters deposition plugin for TCOD.
         """
-        from aiida.tools.dbexporters.tcod import (deposition_cmdline_parameters,
-                                                  extend_with_cmdline_parameters)
-        deposition_cmdline_parameters(parser,self.dataclass.__name__)
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        from aiida.tools.dbexporters.tcod import (
+            deposition_cmdline_parameters, extend_with_cmdline_parameters)
+        deposition_cmdline_parameters(parser, self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
 
 
-class _Cif(VerdiCommandWithSubcommands,
-           Listable, Visualizable, Exportable, Importable, Depositable):
+class _Cif(VerdiCommandWithSubcommands, Listable, Visualizable, Exportable,
+           Importable, Depositable):
     """
     Visualize CIF structures
     """
@@ -1769,9 +1842,8 @@ class _Cif(VerdiCommandWithSubcommands,
                     exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                        exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
@@ -1798,7 +1870,8 @@ class _Cif(VerdiCommandWithSubcommands,
         self.query_past_days(q_object, args)
         self.query_group(q_object, args)
 
-        object_list = self.dataclass.query(q_object).distinct().order_by('ctime')
+        object_list = self.dataclass.query(q_object).distinct().order_by(
+            'ctime')
 
         entry_list = []
         for obj in object_list:
@@ -1832,11 +1905,19 @@ class _Cif(VerdiCommandWithSubcommands,
         """
         Exporter to CIF.
         """
-        self.print_or_store(node, output_fname, fileformat='cif', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='cif',
+            overwrite=overwrite,
+            other_args=kwargs)
 
-
-    def _export_tcod(self, node, output_fname, overwrite, parameter_data=None, **kwargs):
+    def _export_tcod(self,
+                     node,
+                     output_fname,
+                     overwrite,
+                     parameter_data=None,
+                     **kwargs):
         """
         Plugin for TCOD
         """
@@ -1845,15 +1926,19 @@ class _Cif(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        self.print_or_store(node, output_fname, fileformat='tcod', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='tcod',
+            overwrite=overwrite,
+            other_args=kwargs)
 
-    def _export_tcod_parameters(self,parser,**kwargs):
+    def _export_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters for TCOD
         """
         from aiida.tools.dbexporters.tcod import extend_with_cmdline_parameters
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
 
     def _import_cif(self, filename, **kwargs):
         """
@@ -1878,20 +1963,20 @@ class _Cif(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        return deposit(node,parameters=parameters,**kwargs)
+        return deposit(node, parameters=parameters, **kwargs)
 
     def _deposit_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters deposition plugin for TCOD.
         """
-        from aiida.tools.dbexporters.tcod import (deposition_cmdline_parameters,
-                                                  extend_with_cmdline_parameters)
-        deposition_cmdline_parameters(parser,self.dataclass.__name__)
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        from aiida.tools.dbexporters.tcod import (
+            deposition_cmdline_parameters, extend_with_cmdline_parameters)
+        deposition_cmdline_parameters(parser, self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
 
 
-class _Trajectory(VerdiCommandWithSubcommands,
-                  Listable, Visualizable, Exportable, Depositable):
+class _Trajectory(VerdiCommandWithSubcommands, Listable, Visualizable,
+                  Exportable, Depositable):
     """
     View and manipulate TrajectoryData instances.
     """
@@ -1931,9 +2016,8 @@ class _Trajectory(VerdiCommandWithSubcommands,
                     exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                        exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
@@ -1942,10 +2026,12 @@ class _Trajectory(VerdiCommandWithSubcommands,
         """
         Describe command line parameters.
         """
-        parser.add_argument('--step',
-                            help="ID of the trajectory step. If none is "
-                                 "supplied, all steps are exported.",
-                            type=int, action='store')
+        parser.add_argument(
+            '--step',
+            help="ID of the trajectory step. If none is "
+            "supplied, all steps are exported.",
+            type=int,
+            action='store')
 
     def _show_xcrysden(self, exec_name, trajectory_list, **kwargs):
         """
@@ -1954,8 +2040,9 @@ class _Trajectory(VerdiCommandWithSubcommands,
         import tempfile, subprocess
 
         if len(trajectory_list) > 1:
-            raise MultipleObjectsError("Visualization of multiple trajectories "
-                                       "is not implemented")
+            raise MultipleObjectsError(
+                "Visualization of multiple trajectories "
+                "is not implemented")
         trajectory = trajectory_list[0]
 
         with tempfile.NamedTemporaryFile(suffix='.xsf') as f:
@@ -1963,16 +2050,15 @@ class _Trajectory(VerdiCommandWithSubcommands,
             f.flush()
 
             try:
-                subprocess.check_output([exec_name, '--xsf',f.name])
+                subprocess.check_output([exec_name, '--xsf', f.name])
             except subprocess.CalledProcessError:
                 # The program died: just print a message
                 print "Note: the call to {} ended with an error.".format(
-                       exec_name)
+                    exec_name)
             except OSError as e:
                 if e.errno == 2:
-                    print ("No executable '{}' found. Add to the path, "
-                           "or try with an absolute path.".format(
-                                                           exec_name))
+                    print("No executable '{}' found. Add to the path, "
+                          "or try with an absolute path.".format(exec_name))
                     sys.exit(1)
                 else:
                     raise
@@ -1981,46 +2067,50 @@ class _Trajectory(VerdiCommandWithSubcommands,
         """
         Describe command line parameters for _show_pos
         """
-        parser.add_argument('-s', '--stepsize',
-                type=int,
-                help=''
-                    'The stepsize for the trajectory, set it higher to reduce '
-                    'number of points',
-                default=1
-            )
-        parser.add_argument('--mintime',
-                type=int, default=None,
-                help='The time to plot from'
-            )
-        parser.add_argument('--maxtime',
-                type=int, default=None,
-                help='The time to plot to'
-            )
-        parser.add_argument('-e', '--elements',
-                type=str, nargs='+',
-                help='Show only atoms of that species'
-            )
-        parser.add_argument('-i', '--indices',
-                type=int, nargs='+',
-                help='Show only these indices'
-            )
-        parser.add_argument('--dont-block',
-                action='store_true',
-                help="Don't block interpreter when showing plot"
-            )
+        parser.add_argument(
+            '-s',
+            '--stepsize',
+            type=int,
+            help=''
+            'The stepsize for the trajectory, set it higher to reduce '
+            'number of points',
+            default=1)
+        parser.add_argument(
+            '--mintime', type=int, default=None, help='The time to plot from')
+        parser.add_argument(
+            '--maxtime', type=int, default=None, help='The time to plot to')
+        parser.add_argument(
+            '-e',
+            '--elements',
+            type=str,
+            nargs='+',
+            help='Show only atoms of that species')
+        parser.add_argument(
+            '-i',
+            '--indices',
+            type=int,
+            nargs='+',
+            help='Show only these indices')
+        parser.add_argument(
+            '--dont-block',
+            action='store_true',
+            help="Don't block interpreter when showing plot")
 
     def _show_mpl_heatmap_parameters(self, parser):
         """
         Describe command line parameters for _show_mpl_heatmap
         """
-        parser.add_argument('-c', '--contours',
-                type=float, nargs='+',
-                help='Isovalues to plot'
-            )
-        parser.add_argument( '--sampling-stepsize',
-                type=int,
-                help='Sample positions in plot every sampling_stepsize timestep'
-            )
+        parser.add_argument(
+            '-c',
+            '--contours',
+            type=float,
+            nargs='+',
+            help='Isovalues to plot')
+        parser.add_argument(
+            '--sampling-stepsize',
+            type=int,
+            help='Sample positions in plot every sampling_stepsize timestep')
+
     def _show_mpl_pos(self, exec_name, trajectory_list, **kwargs):
         """
         Produces a matplotlib plot of the trajectory
@@ -2035,15 +2125,23 @@ class _Trajectory(VerdiCommandWithSubcommands,
         for t in trajectory_list:
             t.show_mpl_heatmap(**kwargs)
 
-
     def _export_xsf(self, node, output_fname, overwrite, **kwargs):
         """
         Exporter to XSF.
         """
-        self.print_or_store(node, output_fname, fileformat='xsf', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='xsf',
+            overwrite=overwrite,
+            other_args=kwargs)
 
-    def _export_tcod(self, node, output_fname, overwrite, parameter_data=None, **kwargs):
+    def _export_tcod(self,
+                     node,
+                     output_fname,
+                     overwrite,
+                     parameter_data=None,
+                     **kwargs):
         """
         Plugin for TCOD
         """
@@ -2053,32 +2151,42 @@ class _Trajectory(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        self.print_or_store(node, output_fname, fileformat='tcod', overwrite=overwrite,
-                            other_args=kwargs)
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='tcod',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters for TCOD
         """
         from aiida.tools.dbexporters.tcod import extend_with_cmdline_parameters
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
 
     def _export_cif(self, node, output_fname, overwrite, **kwargs):
         """
         Exporter to CIF.
         """
-        self.print_or_store(node, output_fname, fileformat='cif', overwrite=overwrite,
-                            other_args=kwargs)
-
+        self.print_or_store(
+            node,
+            output_fname,
+            fileformat='cif',
+            overwrite=overwrite,
+            other_args=kwargs)
 
     def _export_cif_parameters(self, parser, **kwargs):
         """
         Describe command line parameters.
         """
-        parser.add_argument('--step', dest='trajectory_index',
-                            help="ID of the trajectory step. If none is "
-                                 "supplied, all steps are exported.",
-                            type=int, action='store')
+        parser.add_argument(
+            '--step',
+            dest='trajectory_index',
+            help="ID of the trajectory step. If none is "
+            "supplied, all steps are exported.",
+            type=int,
+            action='store')
 
     def _deposit_tcod(self, node, parameter_data=None, **kwargs):
         """
@@ -2091,16 +2199,16 @@ class _Trajectory(VerdiCommandWithSubcommands,
             from aiida.orm import DataFactory
             ParameterData = DataFactory('parameter')
             parameters = load_node(parameter_data, parent_class=ParameterData)
-        return deposit(node,parameters=parameters,**kwargs)
+        return deposit(node, parameters=parameters, **kwargs)
 
     def _deposit_tcod_parameters(self, parser, **kwargs):
         """
         Command line parameters deposition plugin for TCOD.
         """
-        from aiida.tools.dbexporters.tcod import (deposition_cmdline_parameters,
-                                                  extend_with_cmdline_parameters)
-        deposition_cmdline_parameters(parser,self.dataclass.__name__)
-        extend_with_cmdline_parameters(parser,self.dataclass.__name__)
+        from aiida.tools.dbexporters.tcod import (
+            deposition_cmdline_parameters, extend_with_cmdline_parameters)
+        deposition_cmdline_parameters(parser, self.dataclass.__name__)
+        extend_with_cmdline_parameters(parser, self.dataclass.__name__)
         self._export_cif_parameters(parser)
 
 
