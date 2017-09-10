@@ -16,10 +16,10 @@ defines drop-in replacement functionality to use the old filesystem based and th
 new setuptools based plugin systems in parallel.
 """
 
-# try:
-    # from reentry import manager as epm
-# except ImportError:
-import pkg_resources as epm
+try:
+    from reentry import manager as epm
+except ImportError:
+    import pkg_resources as epm
 
 from aiida.common.exceptions import MissingPluginError
 
