@@ -21,7 +21,7 @@ install_requires = [
     'pytz==2014.10',
     'six==1.10',
     'future',
-    'singledispatch >= 3.4.0.0',
+    'pyyaml',
     # We need for the time being to stay with an old version
     # of celery, including the versions of the AMQP libraries below,
     # because the support for a SQLA broker has been dropped in later
@@ -42,6 +42,7 @@ install_requires = [
     'portalocker==1.1.0',
     'SQLAlchemy==1.0.12',  # upgrade to SQLalchemy 1.1.5 does break tests, see #465
     'SQLAlchemy-Utils==0.31.2',
+    'alembic>=0.9.2',
     'ujson==1.35',
     'enum34==1.1.2',
     'voluptuous==0.8.11',
@@ -63,6 +64,8 @@ install_requires = [
 ]
 
 extras_require = {
+    # Requirements for Python 2 only
+    ':python_version < "3"': ['chainmap', 'pathlib2', 'singledispatch >= 3.4.0.0'],
     # Requirements for ssh transport with authentification through Kerberos
     # token
     # N. B.: you need to install first libffi and MIT kerberos GSSAPI including header files.

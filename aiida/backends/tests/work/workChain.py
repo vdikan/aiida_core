@@ -9,12 +9,14 @@
 ###########################################################################
 
 import inspect
+import unittest
+import aiida.backends.settings as settings
 
+from aiida.orm import load_node
 from aiida.backends.testbase import AiidaTestCase
 from plum.engine.ticking import TickingEngine
 import plum.process_monitor
 from aiida.orm.calculation.work import WorkCalculation
-from aiida.orm.calculation.job.quantumespresso.pw import PwCalculation
 from aiida.work.workchain import WorkChain, \
     ToContext, _Block, _If, _While, if_, while_, return_
 from aiida.work.workchain import _WorkChainSpec, Outputs
@@ -25,9 +27,6 @@ import aiida.work.util as util
 from aiida.common.links import LinkType
 from aiida.workflows.wf_demo import WorkflowDemo
 from aiida.daemon.workflowmanager import execute_steps
-
-
-PwProcess = PwCalculation.process()
 
 
 class Wf(WorkChain):
@@ -174,6 +173,52 @@ class TestWorkchain(AiidaTestCase):
         with self.assertRaises(ValueError):
             Wf.spec()
 
+    def test_same_input_node(self):
+        class Wf(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(Wf, cls).define(spec)
+                spec.input('a', valid_type=Int)
+                spec.input('b', valid_type=Int)
+                # Try defining an invalid outline
+                spec.outline(cls.check_a_b)
+
+            def check_a_b(self):
+                assert 'a' in self.inputs
+                assert 'b' in self.inputs
+
+        x = Int(1)
+        run(Wf, a=x, b=x)
+
+    def test_serialize_fct(self):
+        class Wf(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(Wf, cls).define(spec)
+                spec.input('foo', valid_type=Int, serialize_fct=lambda x: Int(x))
+                # Try defining an invalid outline
+                spec.outline(cls.test_foo)
+
+            def test_foo(self):
+                assert isinstance(self.inputs.foo, Int)
+
+        run(Wf, foo=1)
+
+    def test_deserialize_fct(self):
+        class Wf(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(Wf, cls).define(spec)
+                spec.input('foo', valid_type=Int, deserialize_fct=lambda x: x.value)
+                # Try defining an invalid outline
+                spec.outline(cls.test_foo)
+
+            def test_foo(self):
+                assert isinstance(self.get_deserialized_input('foo'), int)
+                assert isinstance(self.inputs.foo, Int)
+
+        run(Wf, foo=Int(1))
+
     def test_context(self):
         A = Str("a")
         B = Str("b")
@@ -280,6 +325,7 @@ class TestWorkchain(AiidaTestCase):
 
         WcWithReturn.run()
 
+    @unittest.skipIf(settings.BACKEND == u'sqlalchemy', "SQLA async functionality is in development")
     def test_tocontext_async_workchain(self):
         class MainWorkChain(WorkChain):
             @classmethod
@@ -317,6 +363,115 @@ class TestWorkchain(AiidaTestCase):
         te.shutdown()
 
         return finished_steps
+
+class TestFastForwardingWorkChain(TestWorkchain):
+    def setUp(self):
+        super(TestFastForwardingWorkChain, self).setUp()
+        class ReturnInputsFastForward(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(ReturnInputsFastForward, cls).define(spec)
+                spec.input('a', valid_type=Int)
+                spec.input('b', valid_type=Int, default=Int(2), required=False)
+                spec.outline(cls.return_inputs)
+                spec.deterministic()
+
+            def return_inputs(self):
+                self.out('a', self.inputs.a)
+                self.out('b', self.inputs.b)
+        self.wf_class = ReturnInputsFastForward
+        self.reference_result, self.reference_pid = run(
+            self.wf_class, a=Int(1), b=Int(2), _return_pid=True
+        )
+        self.reference_wc = load_node(self.reference_pid)
+
+        class ReturnInputsFastForward(WorkChain):
+            @classmethod
+            def define(cls, spec):
+                super(ReturnInputsFastForward, cls).define(spec)
+                spec.input('a', valid_type=Int)
+                spec.input('b', valid_type=Int, default=Int(2), required=False)
+                spec.outline(cls.return_inputs)
+                spec.deterministic()
+
+            def return_inputs(self):
+                raise ValueError
+
+        self.wf_class_broken = ReturnInputsFastForward
+
+    def tearDown(self):
+        super(TestFastForwardingWorkChain, self).tearDown()
+        super(TestFastForwardingWorkChain, self).tearDownClass()
+        super(TestFastForwardingWorkChain, self).setUpClass()
+
+    def test_hash(self):
+        res, pid = run(
+            self.wf_class,
+            a=Int(1), b=Int(2),
+            _fast_forward=True, _return_pid=True
+        )
+        wc = load_node(pid)
+        self.assertEquals(wc.get_hash(), self.reference_wc.get_hash())
+        self.assertNotEquals(wc.get_hash(), None)
+
+    def test_fastforwarding(self):
+        res, pid = run(
+            self.wf_class,
+            a=Int(1), b=Int(2),
+            _fast_forward=True, _return_pid=True
+        )
+        self.assertEquals(pid, self.reference_pid)
+        self.assertEquals(res, self.reference_result)
+
+    def test_fastforwarding_notexecuted(self):
+        res, pid = run(
+            self.wf_class_broken,
+            a=Int(1), b=Int(2),
+            _fast_forward=True, _return_pid=True
+        )
+        self.assertEquals(pid, self.reference_pid)
+        self.assertEquals(res, self.reference_result)
+
+    def test_fastforwarding_notexecuted_testworks(self):
+        self.assertRaises(
+            ValueError,
+            run,
+            self.wf_class_broken,
+            a=Int(1), b=Int(2),
+            _fast_forward=False, _return_pid=True
+        )
+
+    def test_fastforwarding_twice(self):
+        res1, pid1 = run(
+            self.wf_class,
+            a=Int(1), b=Int(2),
+            _fast_forward=True, _return_pid=True
+        )
+        res2, pid2 = run(
+            self.wf_class,
+            a=Int(1), b=Int(2),
+            _fast_forward=True, _return_pid=True
+        )
+        self.assertEquals(pid1, pid2)
+        self.assertEquals(res1, res2)
+
+    def test_fastforwarding_default(self):
+        res, pid = run(
+            self.wf_class,
+            a=Int(1),
+            _fast_forward=True, _return_pid=True
+        )
+        self.assertEquals(pid, self.reference_pid)
+        self.assertEquals(res, self.reference_result)
+
+    def test_fastforwarding_different(self):
+        res, pid = run(
+            self.wf_class,
+            a=Int(2), b=Int(1),
+            _fast_forward=True, _return_pid=True
+        )
+        self.assertNotEquals(pid, self.reference_pid)
+        self.assertNotEquals(res, self.reference_result)
 
 
 class TestWorkchainWithOldWorkflows(AiidaTestCase):
@@ -387,7 +542,7 @@ class TestHelpers(AiidaTestCase):
         for n in [a, b, c]:
             n.store()
 
-        from aiida.work.workchain import _get_proc_outputs_from_registry
+        from aiida.work.interstep import _get_proc_outputs_from_registry
         outputs = _get_proc_outputs_from_registry(c.pk)
         self.assertListEqual(outputs.keys(), [u'a', u'b'])
         self.assertEquals(outputs['a'], a)

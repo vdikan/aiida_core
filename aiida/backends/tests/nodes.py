@@ -15,11 +15,105 @@ import unittest
 from aiida.backends.testbase import AiidaTestCase
 from aiida.common.exceptions import ModificationNotAllowed, UniquenessError
 from aiida.common.links import LinkType
+from aiida.common import caching
 from aiida.orm.data import Data
 from aiida.orm.node import Node
 from aiida.orm.utils import load_node
 
+class TestNodeHashing(AiidaTestCase):
+    """
+    Tests the functionality of hashing a node
+    """
+    @staticmethod
+    def create_simple_node(a, b=0, c=0):
+        n = Node()
+        n._set_attr('a', a)
+        n._set_attr('b', b)
+        n._set_attr('c', c)
+        return n
 
+    def test_simple_equal_nodes(self):
+        attributes = [
+            (1.0, 1.1, 1.2),
+            ({'a': 'b', 'c': 'd'}, [1, 2, 3], {4, 1, 2})
+        ]
+        for attr in attributes:
+            n1 = self.create_simple_node(*attr)
+            n2 = self.create_simple_node(*attr)
+            n1.store(use_cache=True)
+            n2.store(use_cache=True)
+            self.assertEqual(n1.uuid, n2.uuid)
+            self.assertEqual(n1.folder.get_abs_path('.'), n2.folder.get_abs_path('.'))
+
+    @staticmethod
+    def create_folderdata_with_empty_file():
+        from aiida.orm.data.folder import FolderData
+        res = FolderData()
+        with res.folder.get_subfolder('path').open('name', 'w') as f:
+            pass
+        return res
+
+    @staticmethod
+    def create_folderdata_with_empty_folder():
+        from aiida.orm.data.folder import FolderData
+        res = FolderData()
+        res.folder.get_subfolder('path/name').create()
+        return res
+
+    def test_folder_file_different(self):
+        f1 = self.create_folderdata_with_empty_file()
+        f2 = self.create_folderdata_with_empty_folder()
+
+        assert (
+            f1.folder.get_subfolder('path').get_content_list() ==
+            f2.folder.get_subfolder('path').get_content_list()
+        )
+        assert f1.get_hash() != f2.get_hash()
+
+    def test_folder_same(self):
+        f1 = self.create_folderdata_with_empty_folder()
+        f2 = self.create_folderdata_with_empty_folder()
+        f1.store()
+        f2.store(use_cache=True)
+        assert f1.uuid == f2.uuid
+
+    def test_file_same(self):
+        f1 = self.create_folderdata_with_empty_file()
+        f2 = self.create_folderdata_with_empty_file()
+        f1.store()
+        f2.store(use_cache=True)
+        assert f1.uuid == f2.uuid
+
+    def test_simple_unequal_nodes(self):
+        attributes = [
+            [(1.0, 1.1, 1.2), (2.0, 1.1, 1.2)],
+            [(1e-14,), (2e-14,)],
+        ]
+        for attr1, attr2 in attributes:
+            n1 = self.create_simple_node(*attr1)
+            n2 = self.create_simple_node(*attr2)
+            n1.store()
+            n2.store(use_cache=True)
+            self.assertNotEquals(n1.uuid, n2.uuid)
+
+    def test_unequal_arrays(self):
+        import numpy as np
+        from aiida.orm.data.array import ArrayData
+        arrays = [
+            (np.zeros(1001), np.zeros(1005)),
+            (np.array([1, 2, 3]), np.array([2, 3, 4]))
+        ]
+        def create_arraydata(arr):
+            a = ArrayData()
+            a.set_array('a', arr)
+            return a
+
+        for arr1, arr2 in arrays:
+            a1 = create_arraydata(arr1)
+            a1.store()
+            a2 = create_arraydata(arr2)
+            a2.store(use_cache=True)
+            self.assertNotEquals(a1.uuid, a2.uuid)
 
 class TestDataNode(AiidaTestCase):
     """
@@ -767,7 +861,7 @@ class TestNodeBasic(AiidaTestCase):
         a = Node()
         a.store()
         a.set_extra('a', 'b')
-        
+
         self.assertEquals(a.get_extra('a'), 'b')
         with self.assertRaises(AttributeError):
             a.get_extra('c')
@@ -996,7 +1090,7 @@ class TestNodeBasic(AiidaTestCase):
         self.assertIsInstance(p.get_attr('b'),basestring)
         self.assertEqual(p.get_attr('c'), ['b', [1,2]])
         self.assertIsInstance(p.get_attr('c'), (list, tuple))
-        
+
         # Check also before storing
         n = Node()
         n._set_attr('a', Str("sometext2"))
@@ -1005,15 +1099,15 @@ class TestNodeBasic(AiidaTestCase):
         self.assertIsInstance(n.get_attr('a'),basestring)
         self.assertEqual(n.get_attr('b'), ['f', True, {'gg': None}])
         self.assertIsInstance(n.get_attr('b'), (list, tuple))
-        
+
         # Check also deep in a dictionary/list
         n = Node()
         n._set_attr('a', {'b': [Str("sometext3")]})
         self.assertEqual(n.get_attr('a')['b'][0], "sometext3")
-        self.assertIsInstance(n.get_attr('a')['b'][0],basestring)     
+        self.assertIsInstance(n.get_attr('a')['b'][0],basestring)
         n.store()
         self.assertEqual(n.get_attr('a')['b'][0], "sometext3")
-        self.assertIsInstance(n.get_attr('a')['b'][0],basestring)     
+        self.assertIsInstance(n.get_attr('a')['b'][0],basestring)
 
     def test_basetype_as_extra(self):
         """
@@ -1048,7 +1142,7 @@ class TestNodeBasic(AiidaTestCase):
         n.store()
         n.set_extra('a', {'b': [Str("sometext3")]})
         self.assertEqual(n.get_extra('a')['b'][0], "sometext3")
-        self.assertIsInstance(n.get_extra('a')['b'][0],basestring)     
+        self.assertIsInstance(n.get_extra('a')['b'][0],basestring)
 
     def test_versioning_lowlevel(self):
         """
@@ -1663,14 +1757,6 @@ class TestSubNodesAndLinks(AiidaTestCase):
         # Twice the same link name
         with self.assertRaises(UniquenessError):
             n3.add_link_from(n4, label='l2')
-
-        # Twice the link to the same node
-        with self.assertRaises(UniquenessError):
-            n3.add_link_from(n2, label='l4')
-
-        # Same error also in _replace_link_from
-        with self.assertRaises(UniquenessError):
-            n3._replace_link_from(n2, label='l4')
 
         n2.store_all()
         n3.store_all()

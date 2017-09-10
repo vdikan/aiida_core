@@ -59,7 +59,8 @@ class AiidaTestCase(unittest.TestCase):
         # Freeze the __impl_class after the first run
         if not hasattr(cls, '__impl_class'):
             if settings.BACKEND == BACKEND_SQLA:
-                from aiida.backends.sqlalchemy.tests.testbase import SqlAlchemyTests
+                from aiida.backends.sqlalchemy.tests.testbase import (
+                    SqlAlchemyTests)
                 cls.__impl_class = SqlAlchemyTests
             elif settings.BACKEND == BACKEND_DJANGO:
                 from aiida.backends.djsite.db.testbase import DjangoTests
@@ -143,7 +144,7 @@ def run_aiida_db_tests(tests_to_run, verbose=False):
 
     actually_run_tests = []
     num_tests_expected = 0
-    
+
     # To avoid adding more than once the same test
     # (e.g. if you type both db and db.xxx)
     found_modulenames = set()
